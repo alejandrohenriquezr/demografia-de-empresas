@@ -4,12 +4,3 @@ upload/
 __pycache__/
 *.py[cod]
 
-# Datos institucionales: se entregan fuera del repositorio y se copian antes de construir.
-datos_OE/cuadros_estadisticos/*.xlsx
-datos_OE/cuadros_estadisticos/*.xlsm
-datos_OE/documentos_de_trabajo/*.pdf
-datos_OE/metodologia/*.pdf
-/*.xlsx
-/*.xlsm
-/*.pdf
-
