@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "validate:data": "node scripts/validate-data.mjs",
-    "build": "npm run validate:data && bash scripts/build.sh"
+    "build": "npm run validate:data && node scripts/cache-manifest.mjs && bash scripts/build.sh"
   }
 }
 
