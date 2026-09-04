@@ -1,0 +1,30 @@
+name: Validar caché de datos
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "datos_OE/cuadros_estadisticos/**"
+      - "scripts/cache-manifest.mjs"
+      - "scripts/build.mjs"
+      - "worker/**"
+
+jobs:
+  detect-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verificar insumos
+        run: npm run validate:data
+      - name: Calcular manifiesto SHA-256
+        run: node scripts/cache-manifest.mjs
+      - name: Construir artefacto
+        run: npm run build
+      - name: Publicar artefacto para despliegue
+        uses: actions/upload-artifact@v4
+        with:
+          name: demografia-de-empresas-site
+          path: dist/
