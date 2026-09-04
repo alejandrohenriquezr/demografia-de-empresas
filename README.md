@@ -21,7 +21,7 @@ El resultado queda en `dist/server/index.js` y contiene todos los recursos neces
 
 ## Datos y publicaciones
 
-Los Excel y PDF no se incluyen en GitHub. Antes de construir deben estar en las rutas exactas indicadas en los README de [`datos_OE/cuadros_estadisticos`](datos_OE/cuadros_estadisticos/README.md), [`documentos_de_trabajo`](datos_OE/documentos_de_trabajo/README.md) y [`metodologia`](datos_OE/metodologia/README.md). `scripts/validate-data.mjs` falla con la lista de archivos faltantes. No se debe volver a usar el libro monolítico RUE: el análisis consume únicamente los 23 Excel publicados en “Cuadros estadísticos”.
+Los Excel y PDF se versionan en GitHub porque este repositorio es público. Antes de construir deben estar en las rutas exactas indicadas en los README de [`datos_OE/cuadros_estadisticos`](datos_OE/cuadros_estadisticos/README.md), [`documentos_de_trabajo`](datos_OE/documentos_de_trabajo/README.md) y [`metodologia`](datos_OE/metodologia/README.md). `scripts/validate-data.mjs` falla con la lista de archivos faltantes. No se debe volver a usar el libro monolítico RUE: el análisis consume únicamente los 23 Excel publicados en “Cuadros estadísticos”.
 
 ## Rutas HTTP del Worker
 
@@ -43,4 +43,4 @@ La migración Python/MySQL está documentada en [`backend/README.md`](backend/RE
 4. Para cambiar un dato, reemplace el archivo correspondiente y reconstruya; no cambie nombres ni hojas sin actualizar `worker/client.js`.
 5. Para MySQL, ejecute `schema.sql`, luego `seed.sql`, configure variables de entorno y arranque Flask con `flask --app backend/app run`.
 
-Los datos deben manejarse conforme a las políticas del INE. No se incluyen credenciales, `.env`, binarios institucionales ni artefactos generados.
+Los datos deben manejarse conforme a las políticas del INE. No se incluyen credenciales, `.env` ni artefactos generados.
