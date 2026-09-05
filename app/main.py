@@ -17,13 +17,13 @@ DATOS_DIR = BASE_DIR / "datos_OE"
 
 app = FastAPI(
     title="Demografía de Empresas",
-    version="0.3.0",
+    version="0.4.0",
     description="API Python para la migración gradual del sitio de demografía empresarial.",
 )
 
 app.include_router(empresas_router)
 
-# Se mantienen las rutas públicas actuales para no modificar todavía el frontend.
+# Se mantienen las rutas públicas actuales para no modificar todavía el frontend base.
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 app.mount("/datos_OE", StaticFiles(directory=DATOS_DIR), name="datos_OE")
 
@@ -46,54 +46,150 @@ def xlsx_library() -> FileResponse:
 
 @app.get("/client-dynamic", include_in_schema=False)
 def dynamic_client() -> Response:
-    """Entrega el cliente actual y añade el piloto API para el gráfico de evolución."""
+    """Entrega el cliente actual y añade la capa API del bloque de empresas activas."""
     original = CLIENT_FILE.read_text(encoding="utf-8")
-    pilot = r'''
+    api_layer = r'''
 
-/* Piloto Etapa 4: reemplaza únicamente la fuente del gráfico de evolución por la API Python.
-   Si la API falla, se conserva el gráfico ya renderizado desde el Excel por el cliente original. */
+/* Etapa 5.1: bloque de empresas activas desde API Python.
+   Si una API falla, se conserva el gráfico que ya renderizó el cliente Excel original. */
 (() => {
-  async function renderEvolucionDesdeApi() {
-    const target = document.getElementById("grafico-evolucion");
+  const number = value => Number(value ?? 0) || 0;
+  const mobile = () => matchMedia("(max-width:700px)").matches;
+  const short = (value, max) => String(value).length > max ? String(value).slice(0, max - 1) + "…" : String(value);
+
+  async function api(path) {
+    const response = await fetch(path, { cache: "no-store" });
+    if (!response.ok) throw new Error(`API ${path} respondió ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data) || !data.length) throw new Error(`API ${path} sin datos`);
+    return data;
+  }
+
+  async function render(targetId, apiPath, build) {
+    const target = document.getElementById(targetId);
     if (!target || !window.Plotly) return;
     try {
-      const response = await fetch("/api/empresas/evolucion", { cache: "no-store" });
-      if (!response.ok) throw new Error(`API respondió ${response.status}`);
-      const datos = await response.json();
-      if (!Array.isArray(datos) || !datos.length) throw new Error("API sin datos");
-      await Plotly.react(target, [{
-        x: datos.map(d => d.anio),
-        y: datos.map(d => d.empresas_activas),
-        type: "scatter",
-        mode: "lines+markers",
-        line: { color: "#003366", width: 3 },
-        name: "Empresas activas"
-      }], {
+      const data = await api(apiPath);
+      const { traces, layout } = build(data);
+      await Plotly.react(target, traces, {
         paper_bgcolor: "#fff",
         plot_bgcolor: "#fff",
-        margin: { t: 30, r: 20, b: 120, l: 62 },
         hovermode: "x unified",
         font: { family: "Arial" },
         title: { text: "" },
         legend: { orientation: "h", x: 0, xanchor: "left", y: -0.28, yanchor: "top" },
-        yaxis: { title: "Número de empresas" }
+        ...layout
       }, { responsive: true, displaylogo: false });
       target.dataset.dataSource = "python-api";
     } catch (error) {
-      console.warn("Piloto Python no disponible; se mantiene el gráfico desde Excel.", error);
+      console.warn(`API Python no disponible para ${targetId}; se mantiene Excel.`, error);
       target.dataset.dataSource = "excel-fallback";
     }
   }
 
+  async function renderBloqueEmpresas() {
+    await Promise.all([
+      render("grafico-evolucion", "/api/empresas/evolucion", data => ({
+        traces: [{
+          x: data.map(d => d.anio),
+          y: data.map(d => number(d.empresas_activas)),
+          type: "scatter",
+          mode: "lines+markers",
+          line: { color: "#003366", width: 3 },
+          name: "Empresas activas"
+        }],
+        layout: { margin: { t: 30, r: 20, b: 120, l: 62 }, yaxis: { title: "Número de empresas" } }
+      })),
+      render("grafico-geografico", "/api/empresas/por-region", data => {
+        const labels = data.map(d => mobile() ? short(d.region, 25) : d.region);
+        return {
+          traces: [{
+            x: data.map(d => number(d.empresas_activas)),
+            y: labels,
+            customdata: data.map(d => d.region),
+            type: "bar",
+            orientation: "h",
+            marker: { color: "#1f4e79" },
+            hovertemplate: "%{customdata}<br>%{x:,} empresas<extra></extra>"
+          }],
+          layout: {
+            height: Math.max(mobile() ? 420 : 455, data.length * 28 + 115),
+            margin: { t: 42, r: 20, b: 120, l: mobile() ? 175 : 275 },
+            xaxis: { title: "Número de empresas" },
+            yaxis: { autorange: "reversed", tickfont: { size: mobile() ? 10 : 12 } }
+          }
+        };
+      }),
+      render("grafico-ciiu", "/api/empresas/por-actividad", data => {
+        const labels = data.map(d => mobile() ? short(d.glosa, 30) : d.glosa);
+        return {
+          traces: [{
+            x: data.map(d => number(d.empresas_activas)),
+            y: labels,
+            customdata: data.map(d => d.glosa),
+            type: "bar",
+            orientation: "h",
+            marker: { color: "#1f4e79" },
+            hovertemplate: "%{customdata}<br>%{x:,} empresas<extra></extra>"
+          }],
+          layout: {
+            height: Math.max(mobile() ? 500 : 455, data.length * 28 + 115),
+            margin: { t: 42, r: 20, b: 120, l: mobile() ? 205 : 365 },
+            xaxis: { title: "Número de empresas" },
+            yaxis: { autorange: "reversed", tickfont: { size: mobile() ? 9 : 12 } }
+          }
+        };
+      }),
+      render("grafico-tamano", "/api/empresas/por-tamano-trabajadores", data => ({
+        traces: [{
+          x: data.map(d => d.tamano),
+          y: data.map(d => number(d.empresas_activas)),
+          type: "bar",
+          marker: { color: "#1f4e79" }
+        }],
+        layout: { margin: { t: 38, r: 20, b: 120, l: 62 }, yaxis: { title: "Número de empresas" } }
+      })),
+      render("grafico-ventas", "/api/empresas/por-tamano-ventas", data => ({
+        traces: [{
+          x: data.map(d => d.tamano),
+          y: data.map(d => number(d.empresas_activas)),
+          type: "bar",
+          marker: { color: "#1f4e79" }
+        }],
+        layout: { margin: { t: 38, r: 20, b: 120, l: 62 }, yaxis: { title: "Número de empresas" } }
+      })),
+      render("grafico-comparacion-actividad", "/api/empresas/comparacion-criterios", data => {
+        const categories = [...new Set(data.map(d => d.categoria))];
+        return {
+          traces: categories.map(category => {
+            const rows = data.filter(d => d.categoria === category).sort((a, b) => a.anio - b.anio);
+            return {
+              x: rows.map(d => d.anio),
+              y: rows.map(d => number(d.empresas_activas)),
+              type: "scatter",
+              mode: "lines+markers",
+              name: category
+            };
+          }),
+          layout: {
+            margin: { t: 42, r: 20, b: 120, l: 62 },
+            xaxis: { type: "linear", dtick: 1 },
+            yaxis: { title: "Número de empresas" }
+          }
+        };
+      })
+    ]);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => setTimeout(renderEvolucionDesdeApi, 1200));
+    document.addEventListener("DOMContentLoaded", () => setTimeout(renderBloqueEmpresas, 1200));
   } else {
-    setTimeout(renderEvolucionDesdeApi, 1200);
+    setTimeout(renderBloqueEmpresas, 1200);
   }
 })();
 '''
     return Response(
-        content=original + pilot,
+        content=original + api_layer,
         media_type="application/javascript; charset=utf-8",
         headers={"Cache-Control": "no-store"},
     )
