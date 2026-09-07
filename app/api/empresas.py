@@ -24,6 +24,12 @@ FILES = {
     "supervivencia": DATA_DIR / "supervivencia_empresas_por_coho.xlsx",
     "interaccion": DATA_DIR / "interaccion_variables_desagrega.xlsx",
     "interaccion_nacimientos": DATA_DIR / "interaccion_variables_nacimient.xlsx",
+    "comuna": DATA_DIR / "empresas_2025_por_comuna.xlsx",
+    "provincia": DATA_DIR / "empresas_2025_por_provincia.xlsx",
+    "ciiu_clase": DATA_DIR / "empresas_2025_por_ciiu_clase.xlsx",
+    "ciiu_division": DATA_DIR / "empresas_2025_por_ciiu_division.xlsx",
+    "ciiu_grupo": DATA_DIR / "empresas_2025_por_ciiu_grupo.xlsx",
+    "ciiu_subclase": DATA_DIR / "empresas_2025_por_ciiu_subclase.xlsx",
 }
 
 
@@ -281,3 +287,44 @@ def interaccion() -> list[dict]:
 def interaccion_nacimientos() -> list[dict]:
     """Devuelve la tabla de interacción de nacimientos."""
     return _interaction("interaccion_nacimientos")
+
+
+def _dimension(key: str, label: str) -> list[dict]:
+    """Devuelve una desagregación con etiqueta y empresas activas."""
+    frame = _read_table(key, {label, "empresas_activas"})
+    data = (
+        frame.loc[:, [label, "empresas_activas"]]
+        .dropna(subset=[label, "empresas_activas"])
+        .sort_values("empresas_activas", ascending=False)
+    )
+    return [
+        {label: str(getattr(row, label)), "empresas_activas": _number(row.empresas_activas)}
+        for row in data.itertuples(index=False)
+    ]
+
+
+@router.get("/comuna")
+def empresas_por_comuna() -> list[dict]:
+    """Devuelve empresas activas por comuna."""
+    return _dimension("comuna", "comuna")
+
+
+@router.get("/provincia")
+def empresas_por_provincia() -> list[dict]:
+    """Devuelve empresas activas por provincia."""
+    return _dimension("provincia", "provincia")
+
+
+@router.get("/ciiu/{nivel}")
+def empresas_por_ciiu(nivel: str) -> list[dict]:
+    """Devuelve empresas activas por nivel CIIU permitido."""
+    allowed = {
+        "clase": ("ciiu_clase", "glosa"),
+        "division": ("ciiu_division", "glosa"),
+        "grupo": ("ciiu_grupo", "glosa"),
+        "subclase": ("ciiu_subclase", "glosa"),
+    }
+    if nivel not in allowed:
+        raise HTTPException(status_code=404, detail="Nivel CIIU no disponible")
+    key, label = allowed[nivel]
+    return _dimension(key, label)
