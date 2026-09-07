@@ -6,7 +6,7 @@ Sitio para la difusión de resultados de demografía empresarial del Instituto N
 
 La interfaz es HTML/CSS/JavaScript con gráficos Plotly. `worker/index.js` es un Worker sin servidor que entrega la portada, el cliente dinámico, SheetJS, logos y archivos de `datos_OE/`. `worker/client.js` descarga cada Excel publicado, lee su primera hoja en el navegador y actualiza los gráficos y enlaces de descarga. `scripts/build.mjs` genera el artefacto reproducible `dist/server/index.js`; `dist/` no se versiona.
 
-El sitio de ChatGPT Sites funciona sin base de datos ni API de negocio en producción: los datos se empaquetan durante el build. El backend opcional de `backend/` sirve para una migración institucional con Python, Flask y MySQL, donde administra el catálogo de publicaciones.
+El sitio de ChatGPT Sites funciona sin base de datos ni API de negocio en producción: los datos se empaquetan durante el build. El backend opcional de `backend/` sirve para una migración institucional con Python, Flask y MySQL, donde administra el catálogo de publicaciones. El cliente dinámico admite `window.RUE_API_BASE`; al definir, por ejemplo, `window.RUE_API_BASE = "https://api.institucional.ine.gob.cl/demografia-empresas"` antes de cargar `/client-dynamic`, el gráfico de evolución usa `GET /api/cuadros/evolucion_empresas_activas.xlsx`. Si la API falla, usa el cuadro XLSX empaquetado.
 
 ## Requisitos y ejecución
 
