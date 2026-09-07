@@ -1,46 +1,104 @@
 # Demografía de empresas
 
-Sitio para la difusión de resultados de demografía empresarial del Instituto Nacional de Estadísticas (INE), elaborados como estadísticas experimentales a partir del Registro Estadístico de Unidades Económicas (RUE) 2025. Permite consultar empresas activas, nacimientos, muertes, supervivencia y empleo, y navegar por desagregaciones territoriales, actividad económica y tamaño.
+Aplicación de difusión de resultados de demografía empresarial del Instituto Nacional de Estadísticas (INE), elaborados como estadísticas experimentales a partir del Registro Estadístico de Unidades Económicas (RUE) 2025.
 
-## Arquitectura
+La rama `migracion-python` contiene la versión local basada en FastAPI. La interfaz mantiene la maqueta existente y el frontend piloto consulta los datos mediante endpoints Python. Durante la transición conserva un fallback a los archivos Excel.
 
-La interfaz es HTML/CSS/JavaScript con gráficos Plotly. `worker/index.js` es un Worker sin servidor que entrega la portada, el cliente dinámico, SheetJS, logos y archivos de `datos_OE/`. `worker/client.js` descarga cada Excel publicado, lee su primera hoja en el navegador y actualiza los gráficos y enlaces de descarga. `scripts/build.mjs` genera el artefacto reproducible `dist/server/index.js`; `dist/` no se versiona.
+## Requisitos
 
-El sitio de ChatGPT Sites funciona sin base de datos ni API de negocio en producción: los datos se empaquetan durante el build. El backend opcional de `backend/` sirve para una migración institucional con Python, Flask y MySQL, donde administra el catálogo de publicaciones.
+- Windows 10/11, macOS o Linux.
+- Git.
+- Python 3.12 o superior.
+- No se requiere permisos de administrador, MySQL, Docker ni Node.js para ejecutar la versión Python local.
+- Los archivos estadísticos deben estar en `datos_OE/cuadros_estadisticos/`.
 
-## Requisitos y ejecución
+## Instalación desde cero
 
-Se requiere Node.js 20 o superior. Instale dependencias del backend sólo si va a usarlo (`python -m venv .venv && pip install -r backend/requirements.txt`). Copie los insumos siguiendo [`datos_OE/`](datos_OE/cuadros_estadisticos/README.md), configure los dos PDF y ejecute:
+En PowerShell de Windows:
 
-```bash
-npm run validate:data
-npm run build
+```powershell
+git clone -b migracion-python https://github.com/alejandrohenriquezr/demografia-de-empresas.git
+cd demografia-de-empresas
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements-python.txt
 ```
 
-El resultado queda en `dist/server/index.js` y contiene todos los recursos necesarios para el Worker. Para publicar en Sites se usa el empaquetador de Sites sobre `dist/` y `.openai/hosting.json`; el acceso actual es privado. El proyecto de Sites es `appgprj_6a998f0376f08191b246fa98dae11ba9`.
+Si `python` no es reconocido, instale Python desde [python.org](https://www.python.org/downloads/) y marque `Add python.exe to PATH`. También puede usar `py -3.12` si el Python Launcher está instalado.
 
-## Datos y publicaciones
+## Configuración local y SQLite
 
-Los Excel y PDF se versionan en GitHub porque este repositorio es público. Antes de construir deben estar en las rutas exactas indicadas en los README de [`datos_OE/cuadros_estadisticos`](datos_OE/cuadros_estadisticos/README.md), [`documentos_de_trabajo`](datos_OE/documentos_de_trabajo/README.md) y [`metodologia`](datos_OE/metodologia/README.md). `scripts/validate-data.mjs` falla con la lista de archivos faltantes. No se debe volver a usar el libro monolítico RUE: el análisis consume únicamente los 23 Excel publicados en “Cuadros estadísticos”.
+La versión local usa SQLite, incluida en Python. No hay que instalar ni iniciar un motor de base de datos.
 
-## Rutas HTTP del Worker
+Inicialice el catálogo:
 
-`/` entrega la aplicación; `/xlsx` entrega la biblioteca SheetJS; `/client-dynamic` entrega el cliente de análisis; `/assets/<archivo>` entrega los logos; `/datos_OE/<ruta>` entrega un Excel o PDF publicado para lectura/descarga. No existe `/api/workbook` en la versión actual. Las descargas se realizan directamente desde las rutas de datos y no exponen credenciales.
+```powershell
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe scripts\init_db.py
+```
 
-## API y base de datos opcionales
+La base se crea en `data/demografia_empresas.sqlite3`. El script crea las tablas `categorias` y `recursos`, e incorpora los 23 cuadros estadísticos del catálogo.
 
-La migración Python/MySQL está documentada en [`backend/README.md`](backend/README.md). `backend/schema.sql` define `categorias` y `recursos`: una categoría agrupa recursos de publicaciones o documentación; cada recurso conserva título público, nombre físico, ruta relativa, tipo, fecha, estado y orden. `backend/seed.sql` carga las tres categorías y el catálogo inicial. `backend/app.py` expone `GET /api/publicaciones`, devuelve sólo recursos `publicado` y lee conexión desde `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD` y `MYSQL_DATABASE` (ver `.env.example`). Los binarios permanecen en `datos_OE/` o en un volumen/repositorio de objetos; MySQL administra metadatos, no archivos.
+Para cambiar la ubicación de la base:
+
+```powershell
+$env:SQLITE_PATH="C:\ruta\demografia_empresas.sqlite3"
+```
+
+## Verificación
+
+```powershell
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe -m compileall -q app
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+El CI de GitHub ejecuta las mismas verificaciones en cada cambio de la rama [migracion-python](https://github.com/alejandrohenriquezr/demografia-de-empresas/actions).
+
+## Ejecución
+
+```powershell
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+Abrir:
+
+- Aplicación: http://127.0.0.1:8000/
+- Salud: http://127.0.0.1:8000/health
+- Documentación OpenAPI: http://127.0.0.1:8000/docs
+- Catálogo SQLite: http://127.0.0.1:8000/api/catalogo
+- Empresas por región: http://127.0.0.1:8000/api/empresas/region
+
+Detener con `Ctrl+C`.
+
+## API disponible
+
+Los endpoints se encuentran bajo `/api/empresas`:
+
+`evolucion`, `region`, `actividad`, `comuna`, `provincia`, `tamano-trabajadores`, `tamano-ventas`, `nacimientos-muertes`, `tasas`, `supervivencia`, `interaccion`, `interaccion-nacimientos`, `comparacion-criterios` y `ciiu/{clase|division|grupo|subclase}`.
+
+Cada endpoint lee el primer libro de su Excel, valida las columnas requeridas y devuelve JSON ordenado. La documentación interactiva en `/docs` permite probarlos.
 
 ## Estructura
 
-`index.html` contiene la maqueta y estilos; `worker/` contiene servidor, cliente y dependencia vendorizada; `scripts/` contiene build y validación; `assets/` contiene logos; `datos_OE/` contiene insumos fuera de Git; `backend/` contiene la API/catalogación MySQL; `.openai/hosting.json` identifica el proyecto Sites.
+- `app/main.py`: aplicación FastAPI, página, recursos estáticos y catálogo SQLite.
+- `app/api/empresas.py`: endpoints de indicadores.
+- `app/data/excel_loader.py`: lector y perfilador de Excel.
+- `app/data/catalog.py`: catálogo de los 23 cuadros.
+- `app/data/sqlite_db.py`: conexión y esquema SQLite local.
+- `app/static/pilot_empresas_5_1.js`: capa frontend que consulta la API Python.
+- `scripts/init_db.py`: creación y carga inicial del catálogo.
+- `tests/` y `app/tests/`: pruebas automatizadas.
+- `datos_OE/`: Excel y documentos publicados.
+- `backend/`: diseño MySQL previsto para el despliegue institucional.
 
-## Reproducción y mantenimiento
+## Datos
 
-1. Obtenga la misma edición oficial de los 23 Excel y 2 PDF, respetando nombres y estructura.
-2. Ejecute `npm run validate:data` y `npm run build`.
-3. Revise el artefacto y publique `dist/` en el entorno elegido.
-4. Para cambiar un dato, reemplace el archivo correspondiente y reconstruya; no cambie nombres ni hojas sin actualizar `worker/client.js`.
-5. Para MySQL, ejecute `schema.sql`, luego `seed.sql`, configure variables de entorno y arranque Flask con `flask --app backend/app run`.
+No cambiar nombres de archivos ni columnas sin actualizar el catálogo, los endpoints y las pruebas. Si los archivos no están incluidos en una copia de trabajo, deben descargarse de la fuente institucional y ubicarse en las rutas descritas por los README dentro de `datos_OE/`.
 
-Los datos deben manejarse conforme a las políticas del INE. No se incluyen credenciales, `.env` ni artefactos generados.
+## Despliegue institucional
+
+SQLite es sólo el modo local. Para producción se prevé MySQL, almacenamiento institucional de archivos y ejecución de FastAPI con Uvicorn o Gunicorn. El esquema MySQL y la documentación de esa alternativa están en `backend/`.
+
+No se deben versionar credenciales, archivos `.env`, bases SQLite ni artefactos generados.
