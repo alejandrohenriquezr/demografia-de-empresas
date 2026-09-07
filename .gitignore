@@ -1,6 +1,15 @@
-dist/
-upload/
+# Entornos y secretos
+.venv/
 .env
+.env.*
+!.env.example
+
+# Cachés y artefactos
 __pycache__/
 *.py[cod]
+.pytest_cache/
+dist/
+node_modules/
 
+# Base local SQLite
+data/*.sqlite3
