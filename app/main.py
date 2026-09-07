@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -34,13 +35,28 @@ DATOS_DIR = BASE_DIR / "datos_OE"
 # Aplicación FastAPI
 # ---------------------------------------------------------------------
 
+allowed_origins = [
+    origin.strip()
+    for origin in __import__("os").getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
+    if origin.strip()
+]
+
 app = FastAPI(
     title="Demografía de Empresas",
-    version="0.5.0",
+    version="0.6.0",
     description=(
         "API Python para la migración gradual "
         "del sitio de demografía empresarial."
     ),
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 
