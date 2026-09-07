@@ -1,0 +1,39 @@
+name: Python API
+
+on:
+  push:
+    branches: ["migracion-python"]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "requirements-python.txt"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: ["migracion-python"]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "requirements-python.txt"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-python.txt
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements-python.txt
+
+      - name: Verificar sintaxis
+        run: python -m compileall -q app
+
+      - name: Ejecutar pruebas
+        run: pytest -q
