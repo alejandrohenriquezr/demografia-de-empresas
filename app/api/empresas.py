@@ -88,7 +88,7 @@ def empresas_por_region():
     data = (
         frame.loc[:, ["region", "empresas_activas"]]
         .dropna(subset=["region", "empresas_activas"])
-        .sort_values("empresas_activas", ascending=False)
+        .sort_values("region")
     )
 
     return [
