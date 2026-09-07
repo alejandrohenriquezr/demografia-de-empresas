@@ -126,7 +126,9 @@
         const d = await api("/api/empresas/comparacion-criterios");
         const categories = [...new Set(d.map(x => x.categoria))];
         const traces = categories.map(category => {
-          const rows = d.filter(x => x.categoria === category);
+          const rows = d
+           .filter(x => x.categoria === category)
+           .sort((a, b) => a.anio - b.anio);
           return {
             x: rows.map(x => x.anio),
             y: rows.map(x => n(x.empresas_activas)),
