@@ -70,7 +70,7 @@ def evolucion_empresas_activas() -> list[dict[str, int | float]]:
 
 @router.get("/region")
 @router.get("/por-region", include_in_schema=False)
-def empresas_por_region() -> list[dict[str, str | int | float]]:
+def empresas_por_region():
     """Devuelve empresas activas 2025 por región."""
     frame = _read_table("region", {"region", "empresas_activas"})
 
@@ -91,7 +91,7 @@ def empresas_por_region() -> list[dict[str, str | int | float]]:
 
 @router.get("/actividad")
 @router.get("/por-actividad", include_in_schema=False)
-def empresas_por_actividad() -> list[dict[str, str | int | float]]:
+def empresas_por_actividad():
     """Devuelve empresas activas 2025 por sección de actividad económica."""
     frame = _read_table("actividad", {"glosa", "empresas_activas"})
 
@@ -112,7 +112,7 @@ def empresas_por_actividad() -> list[dict[str, str | int | float]]:
 
 @router.get("/tamano-trabajadores")
 @router.get("/por-tamano-trabajadores", include_in_schema=False)
-def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
+def empresas_por_tamano_trabajadores():
     """Devuelve empresas activas 2025 por tamaño según trabajadores."""
     frame = _read_table(
         "tamano_trabajadores",
@@ -134,7 +134,7 @@ def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
 
 @router.get("/tamano-ventas")
 @router.get("/por-tamano-ventas", include_in_schema=False)
-def empresas_por_tamano_ventas() -> list[dict[str, str | int | float]]:
+def empresas_por_tamano_ventas():
     """Devuelve empresas activas 2025 por tamaño según ventas."""
     frame = _read_table(
         "tamano_ventas",
