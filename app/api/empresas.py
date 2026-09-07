@@ -19,6 +19,9 @@ FILES = {
     "tamano_trabajadores": DATA_DIR / "empresas_2025_por_tamano_trabaj.xlsx",
     "tamano_ventas": DATA_DIR / "empresas_2025_por_tamano_ventas.xlsx",
     "comparacion": DATA_DIR / "comparacion_empresas_por_criter.xlsx",
+    "nacimientos_muertes": DATA_DIR / "nacimientos_muertes_por_anio.xlsx",
+    "tasas": DATA_DIR / "tasas_nacimientos_muertes.xlsx",
+    "supervivencia": DATA_DIR / "supervivencia_empresas_por_coho.xlsx",
 }
 
 
@@ -171,6 +174,69 @@ def comparacion_criterios() -> list[dict[str, str | int | float]]:
             "categoria": str(row.categoria),
             "anio": int(row.anio),
             "empresas_activas": _number(row.empresas_activas),
+        }
+        for row in data.itertuples(index=False)
+    ]
+
+
+@router.get("/nacimientos-muertes")
+def nacimientos_muertes() -> list[dict]:
+    """Devuelve la serie anual de nacimientos y muertes de empresas."""
+    frame = _read_table("nacimientos_muertes", {"anio", "tipo", "empresas"})
+    data = (
+        frame.loc[:, ["anio", "tipo", "empresas"]]
+        .dropna(subset=["anio", "tipo", "empresas"])
+        .sort_values(["anio", "tipo"])
+    )
+    return [
+        {"anio": int(row.anio), "tipo": str(row.tipo), "empresas": _number(row.empresas)}
+        for row in data.itertuples(index=False)
+    ]
+
+
+@router.get("/tasas")
+def tasas() -> list[dict]:
+    """Devuelve tasas por dimensión, categoría y año."""
+    required = {
+        "dimension", "categoria", "anio", "tasa_nacimientos",
+        "tasa_muertes", "tasa_neta_nacimientos",
+    }
+    frame = _read_table("tasas", required)
+    data = (
+        frame.loc[:, sorted(required)]
+        .dropna(subset=["dimension", "categoria", "anio"])
+        .sort_values(["dimension", "categoria", "anio"])
+    )
+    return [
+        {
+            "dimension": str(row.dimension),
+            "categoria": str(row.categoria),
+            "anio": int(row.anio),
+            "tasa_nacimientos": _number(row.tasa_nacimientos),
+            "tasa_muertes": _number(row.tasa_muertes),
+            "tasa_neta_nacimientos": _number(row.tasa_neta_nacimientos),
+        }
+        for row in data.itertuples(index=False)
+    ]
+
+
+@router.get("/supervivencia")
+def supervivencia() -> list[dict]:
+    """Devuelve tasas de supervivencia por cohorte."""
+    required = {"dimension", "categoria", "cohorte", "anios", "tasa_supervivencia"}
+    frame = _read_table("supervivencia", required)
+    data = (
+        frame.loc[:, sorted(required)]
+        .dropna(subset=["dimension", "categoria", "cohorte", "anios"])
+        .sort_values(["dimension", "categoria", "cohorte", "anios"])
+    )
+    return [
+        {
+            "dimension": str(row.dimension),
+            "categoria": str(row.categoria),
+            "cohorte": str(row.cohorte),
+            "anios": int(row.anios),
+            "tasa_supervivencia": _number(row.tasa_supervivencia),
         }
         for row in data.itertuples(index=False)
     ]
