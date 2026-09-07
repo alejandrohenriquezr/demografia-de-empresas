@@ -171,12 +171,19 @@ def dynamic_client() -> Response:
 # ---------------------------------------------------------------------
 
 @app.get("/", include_in_schema=False)
-def index() -> FileResponse:
-    """Sirve la interfaz HTML actual desde FastAPI."""
-    return FileResponse(
-        INDEX_FILE,
+def index() -> Response:
+    """Sirve la interfaz e inyecta las dependencias dinámicas de Python."""
+    html = INDEX_FILE.read_text(encoding="utf-8")
+    scripts = (
+        '<script src="/xlsx"></script>'
+        '<script src="/client-dynamic"></script>'
+    )
+    if "</head>" in html:
+        html = html.replace("</head>", scripts + "</head>", 1)
+    else:
+        html += scripts
+    return Response(
+        content=html,
         media_type="text/html; charset=utf-8",
-        headers={
-            "Cache-Control": "no-store"
-        },
+        headers={"Cache-Control": "no-store"},
     )
