@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.api.empresas import router as empresas_router
+from app.data.sqlite_db import connection, initialize
 
 
 # ---------------------------------------------------------------------
@@ -90,6 +91,25 @@ app.mount(
 # ---------------------------------------------------------------------
 # Estado del servicio
 # ---------------------------------------------------------------------
+
+@app.get("/api/catalogo", tags=["catalogo"])
+def catalogo() -> list[dict]:
+    """Devuelve el catálogo local SQLite de recursos publicados."""
+    initialize()
+    with connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT c.slug AS categoria, c.nombre AS categoria_nombre,
+                   r.titulo_publico, r.nombre_archivo,
+                   r.ruta_relativa, r.tipo_archivo, r.orden
+              FROM recursos AS r
+              JOIN categorias AS c ON c.id = r.categoria_id
+             WHERE r.estado = 'publicado'
+             ORDER BY c.orden, r.orden, r.titulo_publico
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
 
 @app.get("/health", tags=["sistema"])
 def health() -> dict[str, str]:
