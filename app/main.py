@@ -1,6 +1,7 @@
 """Punto de entrada FastAPI para la migración gradual del sitio."""
 
 from pathlib import Path
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,7 +38,7 @@ DATOS_DIR = BASE_DIR / "datos_OE"
 
 allowed_origins = [
     origin.strip()
-    for origin in __import__("os").getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
     if origin.strip()
 ]
 
