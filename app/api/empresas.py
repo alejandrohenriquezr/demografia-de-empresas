@@ -69,10 +69,16 @@ def evolucion_empresas_activas() -> list[dict[str, int | float]]:
 
 
 @router.get("/region")
+@router.get("/por-region", include_in_schema=False)
 def empresas_por_region() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por región."""
     frame = _read_table("region", {"region", "empresas_activas"})
-    data = frame.loc[:, ["region", "empresas_activas"]].dropna(subset=["region", "empresas_activas"])
+
+    data = (
+        frame.loc[:, ["region", "empresas_activas"]]
+        .dropna(subset=["region", "empresas_activas"])
+        .sort_values("empresas_activas", ascending=False)
+    )
 
     return [
         {
@@ -84,10 +90,16 @@ def empresas_por_region() -> list[dict[str, str | int | float]]:
 
 
 @router.get("/actividad")
+@router.get("/por-actividad", include_in_schema=False)
 def empresas_por_actividad() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por sección de actividad económica."""
     frame = _read_table("actividad", {"glosa", "empresas_activas"})
-    data = frame.loc[:, ["glosa", "empresas_activas"]].dropna(subset=["glosa", "empresas_activas"])
+
+    data = (
+        frame.loc[:, ["glosa", "empresas_activas"]]
+        .dropna(subset=["glosa", "empresas_activas"])
+        .sort_values("empresas_activas", ascending=False)
+    )
 
     return [
         {
@@ -99,10 +111,17 @@ def empresas_por_actividad() -> list[dict[str, str | int | float]]:
 
 
 @router.get("/tamano-trabajadores")
+@router.get("/por-tamano-trabajadores", include_in_schema=False)
 def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por tamaño según trabajadores."""
-    frame = _read_table("tamano_trabajadores", {"tamano", "empresas_activas"})
-    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano", "empresas_activas"])
+    frame = _read_table(
+        "tamano_trabajadores",
+        {"tamano", "empresas_activas"},
+    )
+
+    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(
+        subset=["tamano", "empresas_activas"]
+    )
 
     return [
         {
@@ -114,10 +133,17 @@ def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
 
 
 @router.get("/tamano-ventas")
+@router.get("/por-tamano-ventas", include_in_schema=False)
 def empresas_por_tamano_ventas() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por tamaño según ventas."""
-    frame = _read_table("tamano_ventas", {"tamano", "empresas_activas"})
-    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano", "empresas_activas"])
+    frame = _read_table(
+        "tamano_ventas",
+        {"tamano", "empresas_activas"},
+    )
+
+    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(
+        subset=["tamano", "empresas_activas"]
+    )
 
     return [
         {
@@ -126,7 +152,6 @@ def empresas_por_tamano_ventas() -> list[dict[str, str | int | float]]:
         }
         for row in data.itertuples(index=False)
     ]
-
 
 @router.get("/comparacion-criterios")
 def comparacion_criterios() -> list[dict[str, str | int | float]]:
