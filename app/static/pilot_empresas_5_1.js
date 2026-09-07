@@ -144,6 +144,44 @@
           yaxis: { title: "Número de empresas" }
         }, { responsive: true, displaylogo: false });
       }]
+      ["grafico-nac-muertes-dinamico", async () => {
+        const d = await api("/api/empresas/nacimientos-muertes");
+        const years = [...new Set(d.map(x => x.anio))].sort();
+        const series = tipo => years.map(year =>
+          d.filter(x => x.anio === year && x.tipo === tipo)
+            .reduce((sum, row) => sum + n(row.empresas), 0)
+        );
+        await Plotly.react("grafico-nac-muertes-dinamico", [
+          { x: years, y: series("Nacimientos"), type: "bar", name: "Nacimientos", marker: { color: "#003366" } },
+          { x: years, y: series("Muertes"), type: "bar", name: "Muertes", marker: { color: "#c8102e" } }
+        ], { ...baseLayout, barmode: "group", margin: { t: 20, r: 20, b: 120, l: 60 }, yaxis: { title: "Empresas" } },
+        { responsive: true, displaylogo: false });
+      }],
+      ["grafico-tasas", async () => {
+        const d = await api("/api/empresas/tasas");
+        const dimension = document.getElementById("tasas-dim-select")?.value;
+        const categoria = document.getElementById("tasas-cat-select")?.value;
+        const rows = d.filter(x => (!dimension || x.dimension === dimension) && (!categoria || x.categoria === categoria));
+        await Plotly.react("grafico-tasas", [
+          { x: rows.map(x => x.anio), y: rows.map(x => n(x.tasa_nacimientos)), type: "scatter", mode: "lines+markers", name: "Tasa de nacimientos", line: { color: "#003366" } },
+          { x: rows.map(x => x.anio), y: rows.map(x => n(x.tasa_muertes)), type: "scatter", mode: "lines+markers", name: "Tasa de muertes", line: { color: "#c8102e" } },
+          { x: rows.map(x => x.anio), y: rows.map(x => n(x.tasa_neta_nacimientos)), type: "scatter", mode: "lines+markers", name: "Tasa neta", line: { color: "#7c3aed", dash: "dot" } }
+        ], { ...baseLayout, margin: { t: 20, r: 20, b: 120, l: 60 }, yaxis: { title: "Tasa (%)", ticksuffix: "%" } },
+        { responsive: true, displaylogo: false });
+      }],
+      ["grafico-supervivencia", async () => {
+        const d = await api("/api/empresas/supervivencia");
+        const dimension = document.getElementById("superv-dim-select")?.value;
+        const categoria = document.getElementById("superv-cat-select")?.value;
+        const rows = d.filter(x => (!dimension || x.dimension === dimension) && (!categoria || x.categoria === categoria));
+        const cohorts = [...new Set(rows.map(x => x.cohorte))];
+        const traces = cohorts.map(cohorte => {
+          const values = rows.filter(x => x.cohorte === cohorte).sort((a, b) => a.anios - b.anios);
+          return { x: values.map(x => x.anios), y: values.map(x => n(x.tasa_supervivencia)), type: "scatter", mode: "lines+markers", name: cohorte };
+        });
+        await Plotly.react("grafico-supervivencia", traces, { ...baseLayout, margin: { t: 20, r: 20, b: 120, l: 60 }, xaxis: { title: "Años desde el nacimiento" }, yaxis: { title: "Tasa de supervivencia (%)", ticksuffix: "%" } },
+        { responsive: true, displaylogo: false });
+      }]
     ];
 
     for (const [id, job] of jobs) {
