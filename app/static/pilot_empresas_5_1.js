@@ -1,4 +1,6 @@
 /* Etapa 5.1: empresas activas desde la API Python.
+   Alias compatibles: /api/empresas/por-region, /api/empresas/por-actividad,
+   /api/empresas/por-tamano-trabajadores y /api/empresas/por-tamano-ventas.
    Cada gráfico conserva el render previo desde Excel si su endpoint falla. */
 (() => {
   const api = async path => {
