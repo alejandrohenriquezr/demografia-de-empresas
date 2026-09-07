@@ -22,6 +22,8 @@ FILES = {
     "nacimientos_muertes": DATA_DIR / "nacimientos_muertes_por_anio.xlsx",
     "tasas": DATA_DIR / "tasas_nacimientos_muertes.xlsx",
     "supervivencia": DATA_DIR / "supervivencia_empresas_por_coho.xlsx",
+    "interaccion": DATA_DIR / "interaccion_variables_desagrega.xlsx",
+    "interaccion_nacimientos": DATA_DIR / "interaccion_variables_nacimient.xlsx",
 }
 
 
@@ -240,3 +242,42 @@ def supervivencia() -> list[dict]:
         }
         for row in data.itertuples(index=False)
     ]
+
+
+def _interaction(key: str) -> list[dict]:
+    """Normaliza una tabla de interacción conservando sus dimensiones."""
+    required = {
+        "dimension_fila", "dimension_columna", "etiqueta_fila",
+        "etiqueta_columna", "empresas_activas",
+    }
+    frame = _read_table(key, required)
+    data = frame.loc[:, sorted(required)].dropna(
+        subset=["dimension_fila", "dimension_columna", "etiqueta_fila",
+                "etiqueta_columna", "empresas_activas"]
+    )
+    data = data.sort_values(
+        ["dimension_fila", "dimension_columna", "etiqueta_fila",
+         "etiqueta_columna"]
+    )
+    return [
+        {
+            "dimension_fila": str(row.dimension_fila),
+            "dimension_columna": str(row.dimension_columna),
+            "etiqueta_fila": str(row.etiqueta_fila),
+            "etiqueta_columna": str(row.etiqueta_columna),
+            "empresas_activas": _number(row.empresas_activas),
+        }
+        for row in data.itertuples(index=False)
+    ]
+
+
+@router.get("/interaccion")
+def interaccion() -> list[dict]:
+    """Devuelve la tabla de interacción de variables de desagregación."""
+    return _interaction("interaccion")
+
+
+@router.get("/interaccion-nacimientos")
+def interaccion_nacimientos() -> list[dict]:
+    """Devuelve la tabla de interacción de nacimientos."""
+    return _interaction("interaccion_nacimientos")
