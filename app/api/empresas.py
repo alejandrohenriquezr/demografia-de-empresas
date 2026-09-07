@@ -55,7 +55,7 @@ def evolucion_empresas_activas() -> list[dict[str, int | float]]:
     frame = _read_table("evolucion", {"anio", "empresas_activas"})
     data = (
         frame.loc[:, ["anio", "empresas_activas"]]
-        .dropna(subset=["anio"])
+        .dropna(subset=["anio", "empresas_activas"])
         .sort_values("anio")
     )
 
@@ -72,7 +72,7 @@ def evolucion_empresas_activas() -> list[dict[str, int | float]]:
 def empresas_por_region() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por región."""
     frame = _read_table("region", {"region", "empresas_activas"})
-    data = frame.loc[:, ["region", "empresas_activas"]].dropna(subset=["region"])
+    data = frame.loc[:, ["region", "empresas_activas"]].dropna(subset=["region", "empresas_activas"])
 
     return [
         {
@@ -87,7 +87,7 @@ def empresas_por_region() -> list[dict[str, str | int | float]]:
 def empresas_por_actividad() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por sección de actividad económica."""
     frame = _read_table("actividad", {"glosa", "empresas_activas"})
-    data = frame.loc[:, ["glosa", "empresas_activas"]].dropna(subset=["glosa"])
+    data = frame.loc[:, ["glosa", "empresas_activas"]].dropna(subset=["glosa", "empresas_activas"])
 
     return [
         {
@@ -102,7 +102,7 @@ def empresas_por_actividad() -> list[dict[str, str | int | float]]:
 def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por tamaño según trabajadores."""
     frame = _read_table("tamano_trabajadores", {"tamano", "empresas_activas"})
-    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano"])
+    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano", "empresas_activas"])
 
     return [
         {
@@ -117,7 +117,7 @@ def empresas_por_tamano_trabajadores() -> list[dict[str, str | int | float]]:
 def empresas_por_tamano_ventas() -> list[dict[str, str | int | float]]:
     """Devuelve empresas activas 2025 por tamaño según ventas."""
     frame = _read_table("tamano_ventas", {"tamano", "empresas_activas"})
-    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano"])
+    data = frame.loc[:, ["tamano", "empresas_activas"]].dropna(subset=["tamano", "empresas_activas"])
 
     return [
         {
@@ -137,7 +137,7 @@ def comparacion_criterios() -> list[dict[str, str | int | float]]:
     )
     data = (
         frame.loc[:, ["categoria", "anio", "empresas_activas"]]
-        .dropna(subset=["categoria", "anio"])
+        .dropna(subset=["categoria", "anio", "empresas_activas"])
         .sort_values(["categoria", "anio"])
     )
 
